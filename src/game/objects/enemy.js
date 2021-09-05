@@ -1,25 +1,33 @@
 import Phaser from 'phaser';
+import { HealthBar } from './healthbar';
 
-export class Enemy extends Phaser.GameObjects.Sprite 
+export class Enemy extends Phaser.Physics.Arcade.Sprite 
 {
 	BASE_SPEED = 30
+	BASE_HEALTH = 100
+	BASE_ATTACK = 30
 
 	constructor({ scene, x, y })
 	{
 		super(scene, x, y)
-
 		this.setScale(0.5)
 
 		this.scene.physics.world.enable(this);
-
-		this.body.setCircle(16)
-		this.body.setOffset(42, 70)
+		this.body.setCircle(24)
+		this.body.setOffset(50, 64)
 		this.body.setFriction(0);
 		this.body.setCollideWorldBounds(true);
 
 		this.anims.create({
 			key: 'idle',
-			frames: [{key: 'lick_idle'}]
+			frames: [
+				{key: 'lick_idle_0'},
+				{key: 'lick_idle_1'},
+				{key: 'lick_idle_2'},
+				{key: 'lick_idle_3'}
+			],
+			frameRate: 2,
+			repeat:-1
 		});
 
 		this.anims.create({
@@ -57,70 +65,77 @@ export class Enemy extends Phaser.GameObjects.Sprite
 			]
 		})
 
+		scene.physics.add.collider(this, scene.crystalGroup, 
+			(enemy, crystal) =>{
+				crystal.applyDamage(this.BASE_ATTACK)
+				enemy.destroy()
+			})
+		
+		scene.physics.add.collider(this, scene.enemyGroup)
 
-		this.cursorKeys = scene.input.keyboard.createCursorKeys();
+		scene.physics.add.collider(this, scene.player, (enemy, player) =>{
+			player.applyDamage(2)
+		})
+
+		this.initHealth();
+		this.doSuperSmartAI();
+
+		this.anims.play("idle")
 
 		this.scene.add.existing(this);
-
 	}
 
-
-	update() {
-
-
-		this.anims.play('attack_right', true)
-
-		const velocity = new Phaser.Math.Vector2(0, 0);
+	async doSuperSmartAI()
+	{
+		//get a target
+		if (!this.target)
+		{
+			//choose targets that have health remaining
+			this.target = this.scene.crystals[Phaser.Math.Between(0, this.scene.crystals.length-1)]
+			const path = await this.scene.pathfinder.pathTo(this, this.target);
+			if (!!path)
+			{
+				var tweens = [];
+				for(var i = 0; i < path.length-1; i++){
+					var ex = path[i+1].x;
+					var ey = path[i+1].y;
+					tweens.push({
+						targets: this,
+						x: {value: ex*this.scene.map.tileWidth, duration: 800},
+						y: {value: ey*this.scene.map.tileHeight, duration: 800},
+					});
+				}
 		
-		if (this.cursorKeys?.left.isDown)
-		{
-			velocity.x = -1;
-			this.facing = 3;
-			
-		}
-		else if (this.cursorKeys?.right.isDown)
-		{
-			velocity.x = 1;
-			this.facing = 2;
-		}
-
-		if (this.cursorKeys?.up.isDown)
-		{
-			velocity.y = -1;
-			this.facing = 1;
-		}
-		else if (this.cursorKeys?.down.isDown)
-		{
-			velocity.y = 1;
-			this.facing = 0
-		}
-		
-		const normalizedVelocity = velocity.normalize();
-		this.body.setVelocity(
-			normalizedVelocity.x * this.BASE_SPEED, 
-			normalizedVelocity.y * this.BASE_SPEED
-		);
-
-
-		switch(this.facing)
-		{
-			case 1:
-				this.anims.play('up', true);
-				break;
-			case 2: 
-				this.anims.play('right', true);
-				break;
-			case 3: 
-				this.anims.play('left', true);
-				break;
-			default:
-				this.anims.play('idle', true);
-				break;
+				this.scene.tweens.timeline({
+					tweens: tweens
+				});
+			}
 		}
 	}
 
+	applyDamage(amount)
+	{
+		this.health -= amount;
+		this.healthbar.setPercentage(this.health / this.BASE_HEALTH)
+		if ( this.health <= 0 )
+		{
+			console.log("enemy died!")
+			this.emit("EnemyDeath");
+			this.destroy()
+		}
+	}
 
+	update()
+	{
+		this.healthbar?.update()
+	}
 
-
+	initHealth() 
+	{
+		//add health bar
+		this.health = this.BASE_HEALTH;
+		this.healthbar = new HealthBar(this.scene);
+		this.healthbar.setFollowTarget(this);
+	}
 }
 

@@ -15,14 +15,14 @@ export class UIScene extends Phaser.Scene {
 
 	preload = () => 
 	{
-		this.load.image('ui_button', process.env.PUBLIC_URL + '/assets/svg/130.svg');
+		//this.load.image('fire', process.env.PUBLIC_URL + '/assets/svg/130.svg');
 	}
 
 	create = () => {
 
-		this.createUIButton()
+		//this.createUIButton()
 
-		const text = this.add.text(
+		this.text = this.add.text(
 			getGameWidth(this)/2, 
 			getGameHeight(this) - 160, 
 			'The Great Portal', 
@@ -33,13 +33,13 @@ export class UIScene extends Phaser.Scene {
 					boundsAlignV: 'middle'
 				}).setScale(4);
 
-		text.alpha = 0
+		this.text.alpha = 0
 
 		const game = this.scene.get('Game')
 		game.events.on('playerSpawned', () => {
 			//fade text in and then out
 			this.tweens.add({
-				targets: text,
+				targets: this.text,
 				alpha: 1,
 				ease: 'Quad.easeIn',
 				delay: 500,
@@ -51,17 +51,33 @@ export class UIScene extends Phaser.Scene {
 		}, this)
 	}
 
-	createUIButton = () => {
-		this.add
-		  .image(getRelative(64, this), getRelative(960, this), 'ui_button')
-		  .setOrigin(0)
-		  .setInteractive({ useHandCursor: true })
-		  .setDisplaySize(getRelative(64, this), getRelative(64, this))
-		  .on('pointerdown', () => {
-			this.back?.play();
-			window.history.back();
-		  });
-	  };
+	showMessage(message)
+	{
+		this.text.text = message
+		this.text.alpha = 0
+		this.tweens.add({
+			targets: this.text,
+			alpha: 1,
+			ease: 'Quad.easeIn',
+			delay: 500,
+			duration: 1000,
+			yoyo: true,
+			repeat: 0,
+			hold: 3000
+		})
+	}
+
+	// createUIButton = () => {
+	// 	this.add
+	// 	  .image(getRelative(64, this), getRelative(960, this), 'fire')
+	// 	  .setOrigin(0)
+	// 	  .setInteractive({ useHandCursor: true })
+	// 	  .setDisplaySize(getRelative(64, this), getRelative(64, this))
+	// 	  .on('pointerdown', () => {
+	// 		this.back?.play();
+	// 		window.history.back();
+	// 	  });
+	//   };
 
 
 }

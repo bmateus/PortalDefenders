@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+import { Crystal } from '../objects/crystal';
 import { Enemy } from '../objects/enemy';
 import { BaseScene } from './baseScene';
 
@@ -11,9 +13,10 @@ export class BattleScene extends BaseScene
 {
 	ROOM_ID = 1
 	BASE_SPEED = 90 	// px/sec
-	playerInfos = {}
+	remotePlayers = {}
 	creepSpawns = []
 	crystalSpawns = []
+	crystals = []
 
 	///////////////////////////
 
@@ -31,7 +34,11 @@ export class BattleScene extends BaseScene
 		this.load.tilemapTiledJSON('battle_map', 'assets/maps/battle01.json');
 		this.load.image('crystal', 'assets/images/alpha.png');
 
-		this.load.svg('lick_idle', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-4-Front.svg')
+		this.load.svg('lick_idle_0', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-1-Front.svg')
+		this.load.svg('lick_idle_1', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-2-Front.svg')
+		this.load.svg('lick_idle_2', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-3-Front.svg')
+		this.load.svg('lick_idle_3', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-4-Front.svg')
+
 		this.load.svg('lick_right', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-7-Right.svg')
 		this.load.svg('lick_up', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-12-Back.svg')
 		this.load.svg('lick_left', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-13-Left.svg')
@@ -46,6 +53,7 @@ export class BattleScene extends BaseScene
 		this.load.svg('lick_attack_left_3', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-16-Left-Tongue.svg')
 		this.load.svg('lick_attack_left_4', 'assets/svg/liquidators/Aavegotchi-Lickquidators-Gaame-Jaam-17-Left-Tongue.svg')
 
+		//this.load.image('fire', process.env.PUBLIC_URL + '/assets/svg/130.svg');
 	}
 
 	create = () => {
@@ -64,20 +72,92 @@ export class BattleScene extends BaseScene
 		this.physics.world.bounds.height = this.map.heightInPixels;
 
 		this.events.once('playerSpawned', () => {
-			this.cameras.main.fadeIn(0x000000, 2000)
+			this.cameras.main.fadeIn(0x000000, 2000);
+			const ui = this.scene.get('UIScene')
+			ui.showMessage("Stop the invasion!")
+			this.player.initHealth(300);
+		})
+
+		this.input.on('pointerdown', async (pointer) => {
+			this.player.doRangedAttack(pointer.worldX, pointer.worldY)
 		})
 
 		this.loadPlayers()
 
 		//init input
 		this.cursors = this.input.keyboard.createCursorKeys()
-		this.initPathfinding()
+		this.initPathfinding() //for enemies
 
-		this.enemy = new Enemy({scene:this, x:this.playerSpawn.x, y:this.playerSpawn.y})
-		this.physics.add.collider(this.enemy, this.wallLayer);
+		this.crystalGroup = this.physics.add.group({key:'crystals', immovable:true})
 
+		for (let i = 0; i < this.crystalSpawns.length; i++) 
+		{
+			const crystalSpawn = this.crystalSpawns[i];			
+			const crystal = new Crystal(this, crystalSpawn.x, crystalSpawn.y)
+			this.crystals.push(crystal)
+			this.crystalGroup.add(crystal)
+		}
 		
+		this.enemyGroup = this.physics.add.group({key:'enemies'}) 
+
+		const enemiesPerWave = 6
+		let numWaves = 10
+		//start spawning enemies
+		this.time.addEvent(
+		{
+			delay: 10000,
+			callback: ()=> {
+				console.log("spawning wave of enemies")
+				console.log("creepSpawns:", this.creepSpawns)
+				for (let i = 0; i < enemiesPerWave; i++) 
+				{
+					//pick a spawn point
+					const spawn = this.creepSpawns[Phaser.Math.Between(0, this.creepSpawns.length-1)]
+					console.log("selected spawn:", spawn)
+					const enemy = new Enemy({scene:this, x:spawn.x, y:spawn.y})
+					this.enemyGroup.add(enemy);
+				}
+				numWaves--;
+				if ( numWaves === 0 )
+				{
+					//todo wait until all enemies are dead too!
+					//return to tower
+					//this.scene.start('Game');
+					const ui = this.scene.get('UIScene')
+					ui.showMessage("Mission Complete!")
+					//rain down a shower of gems to celebrate
+				}
+			},
+			callbackScope: this,
+			repeat: numWaves,
+			
+		}, [], this)
+
+		this.events.on("playerDied", ()=>{
+			console.log("Player Died!")
+			this.cameras.main.fadeOut()
+			this.time.addEvent({
+				delay: 1000,
+				callback: () =>
+				{
+					this.player.x = this.playerSpawn.x
+					this.player.y = this.playerSpawn.y
+					this.player.initHealth()
+					const ui = this.scene.get('UIScene')
+					ui.showMessage("Don't give up!")
+					this.time.addEvent({
+						delay: 1000,
+						callback: () => { 
+							console.log("try again")
+							this.cameras.main.fadeIn() 
+						}
+					});
+				}
+			});
+		})
+
 	}
+	
 
 	update = async (time, delta) => {
 
@@ -116,4 +196,8 @@ export class BattleScene extends BaseScene
 			}
 		});
 	}
+
+	//keep spawning creeps on a timer; if they get to the crystals, they will damage them
+
+	//if all crystals die, return to tower
 }

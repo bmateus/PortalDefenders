@@ -17,9 +17,9 @@
   </data>
  </layer>
  <objectgroup id="3" name="Objects">
-  <object id="1" name="CrystalSpawn" gid="1235" x="625" y="574" width="16" height="16"/>
-  <object id="2" name="CrystalSpawn" gid="1235" x="192" y="495" width="16" height="16"/>
-  <object id="3" name="CrystalSpawn" gid="1235" x="577" y="190" width="16" height="16"/>
+  <object id="1" name="CrystalSpawn" gid="1235" x="640.667" y="576.667" width="16" height="16"/>
+  <object id="2" name="CrystalSpawn" gid="1235" x="208.667" y="497" width="16" height="16"/>
+  <object id="3" name="CrystalSpawn" gid="1235" x="592.333" y="192" width="16" height="16"/>
   <object id="6" name="PortalSpawn" gid="853" x="744" y="761" width="16" height="16"/>
   <object id="9" name="CreepSpawn" gid="1011" x="848" y="350" width="16" height="16"/>
   <object id="10" name="CreepSpawn" gid="1011" x="333" y="199" width="16" height="16"/>

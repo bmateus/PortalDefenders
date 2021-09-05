@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
+import { HealthBar } from './healthbar';
+import { Missile } from './missile';
 
 export class Player extends Phaser.GameObjects.Sprite 
 {
 	BASE_SPEED = 90 // px/sec
-
+	
 	constructor({ scene, playerPosition, key }) {
 		super(scene, playerPosition.get('x'), playerPosition.get('y'), key);
 
@@ -23,6 +25,9 @@ export class Player extends Phaser.GameObjects.Sprite
 		this.body.setOffset(42, 70)
 		this.body.setFriction(0);
 		this.body.setCollideWorldBounds(true);
+
+		this.scene.physics.add.collider(this, this.scene.wallLayer);
+		this.scene.physics.add.collider(this, this.scene.crystalGroup);
 		
 		if ( this.texture.frameTotal > 2) //base and 0
 		{
@@ -85,7 +90,6 @@ export class Player extends Phaser.GameObjects.Sprite
 		this.scene.add.existing(this);
 
 	}
-
 
 	async update() {
 		
@@ -153,6 +157,63 @@ export class Player extends Phaser.GameObjects.Sprite
 			 await this.playerPosition.save()
 		}
 
-	  }
+		this.healthbar?.update()
+
+	}
+
+	initHealth(maxHealth) 
+	{
+		//add health bar
+		this.maxHealth = maxHealth;
+		this.currentHealth = maxHealth;
+		this.healthbar = new HealthBar(this.scene);
+		this.healthbar.setFollowTarget(this);
+	}
+
+	resetHealth()
+	{
+		this.currentHealth = this.maxHealth;
+		this.healthbar.setPercentage(1)
+	}
+
+	applyDamage(damageAmount) 
+	{
+		if (this.currentHealth > 0)
+		{
+			this.currentHealth -= damageAmount
+			this.healthbar.setPercentage(this.currentHealth / this.maxHealth)
+			this.scene.cameras.main.shake(100, 0.001)
+			if (this.currentHealth <= 0 )
+			{
+				console.log("Player Died!!!!")
+				this.scene.events.emit("playerDied");
+			}
+		}
+	}
+
+	doRangedAttack(x, y)
+	{
+		//launch a missile at the target
+		console.log("do ranged attack")
+
+		let offsetX = 0
+		let offsetY = 0
+		switch(this.facing)
+		{
+			case 0: offsetX = -14; offsetY = -8; break;
+			case 1: offsetX = 14; offsetY = -8; break;
+			case 2: offsetX = 4; offsetY = -6; break;
+			case 3: offsetX = -4; offsetY = -6;break;
+			default: break;
+		}
+		let px = this.x + offsetX;
+		let py = this.y + offsetY;
+		const missile = new Missile(this.scene, px, py)
+		const angle = Phaser.Math.Angle.BetweenPoints({x:this.x, y:this.y}, {x:x, y:y});
+		missile.setAngle(-90 + Phaser.Math.RadToDeg(angle));
+		this.scene.physics.velocityFromRotation(angle, 150, missile.body.velocity);
+		
+		
+	}
 
 }

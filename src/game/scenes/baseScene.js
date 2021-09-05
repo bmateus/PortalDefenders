@@ -10,6 +10,8 @@ const PlayerPosition = Moralis.Object.extend("PlayerPosition");
 
 export class BaseScene extends Phaser.Scene 
 {
+	remotePlayers = {}
+
 	loadGotchi = async (userId, tokenId) => {
 		
 		console.log("Loading gotchi:", tokenId, "for user:", userId)
@@ -74,12 +76,12 @@ export class BaseScene extends Phaser.Scene
 				console.log("local player done loading");
 				this.spawnPlayer()
 			}
-			else if (!!this.playerInfos[userId])
+			else if (!!this.remotePlayers[userId])
 			{
 				console.log("remote player done loading", userId);
-				this.playerInfos[userId].player = this.add.image(
-					this.playerInfos[userId].x, 
-					this.playerInfos[userId].y, 
+				this.remotePlayers[userId].player = this.add.image(
+					this.remotePlayers[userId].x, 
+					this.remotePlayers[userId].y, 
 					userId)
 					.setScale(0.25)
 			}
@@ -119,9 +121,10 @@ export class BaseScene extends Phaser.Scene
 			for (let i = 0; i < otherPlayers.length; i++) {
 				const playerInfo = otherPlayers[i];
 				const userId = playerInfo.get("user_id")
-					this.playerInfos[userId] = {
+					this.remotePlayers[userId] = {
 						x:playerInfo.get('x'),
 						y:playerInfo.get('y'),
+						facing:playerInfo.get('facing'),
 					}
 					console.log("creating remote player:", userId, " with tokenId:", playerInfo.get('token_id'))					
 					this.loadGotchi(userId, playerInfo.get('token_id'))
@@ -141,27 +144,29 @@ export class BaseScene extends Phaser.Scene
 				const userId = event.get("user_id")
 				
 				console.log("got remote event!")
-				if (!this.playerInfos[userId])
+				if (!this.remotePlayers[userId])
 				{
-					this.playerInfos[userId] = {
+					this.remotePlayers[userId] = {
 						x:event.get('x'),
 						y:event.get('y'),
+						facing:event.get('facing'),
 					}
 					console.log("creating remote player:", userId, " with tokenId:", event.get('token_id'))
 					this.loadGotchi(userId, event.get('token_id'))
 				}
 				else
 				{
-					this.playerInfos[userId].x = event.get('x')
-					this.playerInfos[userId].y = event.get('y')
-					if (!!this.playerInfos[userId].player)
+					this.remotePlayers[userId].x = event.get('x')
+					this.remotePlayers[userId].y = event.get('y')
+					
+					if (!!this.remotePlayers[userId].player)
 					{
-						var a = event.get('x') - this.playerInfos[userId].player.x
-						var b = event.get('y') - this.playerInfos[userId].player.y
+						var a = event.get('x') - this.remotePlayers[userId].player.x
+						var b = event.get('y') - this.remotePlayers[userId].player.y
 						var t = (Math.sqrt(a*a+b*b)/this.BASE_SPEED)*1000
 
 						this.tweens.add({
-							targets: this.playerInfos[userId].player,
+							targets: this.remotePlayers[userId].player,
 							x: { value:event.get('x'), duration:t },
 							y: { value:event.get('y'), duration:t }
 						})
@@ -192,7 +197,6 @@ export class BaseScene extends Phaser.Scene
 		this.playerPosition.set('room_id', this.ROOM_ID)
 		this.playerPosition.save()
 
-		this.physics.add.collider(this.player, this.wallLayer);
 		this.cameras.main.startFollow(this.player, false, 0.1, 0.1);
 
 		this.physics.add.overlap(this.player, this.zoneGroup)
@@ -222,19 +226,24 @@ export class BaseScene extends Phaser.Scene
 	};
 
 	initPathfinding = () => {
-		const pathfinder = new Pathfinder({
+
+		this.pathfinder = new Pathfinder({
 			map: this.map,
 			collisionLayer: this.wallLayer
 		});
-		this.input.on('pointerdown', async (pointer) => {
-			//test sound
-			this.sound.play('click')
-			const path = await pathfinder.pathTo(this.player, {x:pointer.worldX, y:pointer.worldY})
-			if (!!this.player && !!path)
-			{
-				this.moveGameObject(this.player, path)
-			}
-		})
+
+		// this.input.on('pointerdown', async (pointer) => {
+			
+		// 	if (!!this.player )
+		// 	{
+		// 		//this.sound.play('click') //test sound
+		// 		const path = await this.pathfinder.pathTo(this.player, {x:pointer.worldX, y:pointer.worldY})
+		// 		if (!!path)
+		// 		{
+		// 			this.moveGameObject(this.player, path)
+		// 		}
+		// 	}
+		// })
 	}
 
 

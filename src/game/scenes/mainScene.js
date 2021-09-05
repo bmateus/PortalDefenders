@@ -16,7 +16,7 @@ export class MainScene extends BaseScene {
 	selectedTokenId = 1234; // TODO: get this from aavegotchi context
 
 	playerSpawn = {x:0, y:0}
-	playerInfos = {}
+
 	portals = []
 
 	//temp to select a random gotchi from player's collection
@@ -127,6 +127,8 @@ export class MainScene extends BaseScene {
 		this.load.svg('bartender', 'assets/svg/sets/Aavegotchi-Gaame-Jaam-4.svg');
 		this.load.svg('portal', 'assets/svg/h1_open.svg');
 
+		this.load.svg('fire', '/assets/svg/130.svg');
+
 		//this.load.audioSprite()
 		this.load.audio('sending', 'assets/sounds/sending.mp3')
 		this.load.audio('click', 'assets/sounds/click.mp3')
@@ -165,6 +167,14 @@ export class MainScene extends BaseScene {
 
 		await this.selectRandomGotchi()
 
+		this.events.on('playerSpawned', () => {
+			//this.player.initHealth(300) //for testing health bar
+		})
+
+		this.input.on('pointerdown', async (pointer) => {
+			this.player?.doRangedAttack(pointer.worldX, pointer.worldY)
+		})
+
 		await this.loadPlayers()
 
 		//listen for portal spawns
@@ -172,6 +182,8 @@ export class MainScene extends BaseScene {
 			const query = new Moralis.Query('SpawnPortal');
 			const subscription = await query.subscribe();
 			subscription.on('create', event =>{
+				const ui = this.scene.get('UIScene')
+				ui.showMessage("A portal was spawned!")
 				console.log("A portal was spawned!", event.get('portal'), event.get('secs'))
 			})
 		}
