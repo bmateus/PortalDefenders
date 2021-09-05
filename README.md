@@ -4,6 +4,8 @@ Made this for the Aavegotchi Game Jam. The idea is that the Aavegotchi are hangi
 
 This was my first time using Moralis and Phaser and I enjoyed working with both. While I wasn't able to realize the idea, it still is a good starting point that might be pretty fun if flushed out more!
 
+Check out current progress here: https://square-wildflower-4590.on.fleek.co/
+(might need to refresh a few times)
 
 ## Available Scripts
 
