@@ -307,7 +307,7 @@ Moralis.Cloud.define("getAavegotchiData", async(request) =>{
 		//otherwise return some default data
 		return {
 			tokenId: 0,
-			hauntId: 0,
+			hauntId: 1,
 			collateral:"0x9719d867a500ef117cc201206b8ab51e794d3f82", //maUSDC
 			numericTraits: [50, 50, 50, 50, 0, 1],
 			equippedWearables: [ 0, 0, 0, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]

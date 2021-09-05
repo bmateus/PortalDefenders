@@ -22,11 +22,17 @@ export class MainScene extends BaseScene {
 	//temp to select a random gotchi from player's collection
 	selectRandomGotchi = async () => {
 		console.log("Selecting Random Gotchi from current user's collection", Moralis.User.current().id)
-		const gotchis = await getPlayerGotchis(Moralis.User.current().id)
+		const gotchis = await getPlayerGotchis(Moralis.User.current().get("ethAddress"))
+
+		console.log("gotchis available:", gotchis)
 		if (gotchis.length > 0)
 		{
 			this.tokenId = gotchis[Math.floor(Math.random() * gotchis.length)]
 			console.log("Selected Random Gotchi:", this.tokenId);
+		}
+		else
+		{
+			this.tokenId = "0"; //use the placeholder
 		}
 		//this.tokenId = "4479" //has bad gotchi sides
 	}

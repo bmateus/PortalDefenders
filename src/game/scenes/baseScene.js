@@ -25,6 +25,8 @@ export class BaseScene extends Phaser.Scene
 			equippedWearables:gotchiStats.equippedWearables
 		})
 
+		//console.log("svg:", svg);
+
 		const spriteMatrix = [
 			// Front
 			[
